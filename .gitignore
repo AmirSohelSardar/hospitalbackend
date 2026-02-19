@@ -6,6 +6,7 @@ backend/node_modules
 .env.development
 .env.test
 .env.production
+node_modules
 
 # Build artifacts
 dist/
