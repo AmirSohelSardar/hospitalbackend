@@ -16,7 +16,6 @@ import messageRoute from './Routes/message.js';
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 5000;
 
 const corsOptions = {
   origin: [
@@ -28,32 +27,47 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
-// ✅ FIX 1: Middleware BEFORE routes
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // ✅ FIX 2: Handle preflight requests
+app.options('*', cors(corsOptions));
 
-// mongo connection
-mongoose.set("strictQuery", false);
+// ✅ Cached connection for Vercel serverless
+let isConnected = false;
+
 const connectDB = async () => {
+  if (isConnected) return;
   try {
+    mongoose.set("strictQuery", false);
     await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000,
+      bufferCommands: false,
     });
+    isConnected = true;
     console.log("MongoDB database is connected");
   } catch (err) {
     console.error("MongoDB connection failed:", err);
-    process.exit(1);
+    isConnected = false;
+    throw err;
   }
 };
+
+// ✅ Connect before every request
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Database connection failed" });
+  }
+});
 
 app.get("/", (req, res) => {
   res.send("Api is working");
 });
 
-// Routes
 app.use('/api/v1/auth', authRoute);
 app.use('/api/v1/users', userRoute);
 app.use('/api/v1/doctors', doctorRoute);
@@ -64,9 +78,12 @@ app.use('/api/v1/insights', insightRoute);
 app.use('/api/v1/prescriptions', prescriptionRoute);
 app.use('/api/v1/messages', messageRoute);
 
-app.listen(port, () => {
-  connectDB();
-  console.log("Server is running on port: " + port);
-});
+// ✅ Only listen locally, not on Vercel
+if (process.env.NODE_ENV !== 'production') {
+  const port = process.env.PORT || 5000;
+  app.listen(port, () => {
+    console.log("Server is running on port: " + port);
+  });
+}
 
 export default app;
