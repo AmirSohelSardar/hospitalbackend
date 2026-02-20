@@ -5,7 +5,7 @@ import {
     getMessages,
     getDoctorMessages,
     getPatientList
-} from '../Controllers/messageController.js';
+} from '../Controllers/MessageController.js';
 import { authenticate, restrict } from '../auth/verifyToken.js';
 
 const router = express.Router();
