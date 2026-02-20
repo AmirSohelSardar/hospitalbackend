@@ -1,8 +1,13 @@
 const EMAIL_HEADER = `
 <div style="text-align:center; margin-bottom:20px; border-bottom:2px solid #0a58ca; padding-bottom:10px;">
-  <div style="font-size:24px; font-weight:bold; color:#0a58ca;">
-    Lifeline Hospital
-  </div>
+  <a href="https://hospitalfrontend-ochre.vercel.app" style="text-decoration:none;">
+    <div style="font-size:24px; font-weight:bold; color:#0a58ca;">
+      Lifeline Hospital
+    </div>
+    <div style="font-size:12px; color:#666; margin-top:4px;">
+      https://hospitalfrontend-ochre.vercel.app
+    </div>
+  </a>
 </div>
 `;
 
