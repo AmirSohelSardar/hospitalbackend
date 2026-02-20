@@ -13,57 +13,58 @@ import insightRoute from "./Routes/insight.js"
 import prescriptionRoute from "./Routes/prescription.js"
 import messageRoute from './Routes/message.js';
 
-
-
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 500;
+const port = process.env.PORT || 5000;
 
+// FIX: proper CORS with both local and production frontend URLs
 const corsOptions = {
-  origin: true,
-  // Ajoutez d'autres options CORS si nécessaire
+  origin: [
+    'http://localhost:5173',
+    'https://hospitalfrontend-ochre.vercel.app'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
 app.get("/", (req, res) => {
   res.send("Api is working");
 });
- 
-//mongo connection
+
+// mongo connection
 mongoose.set("strictQuery", false);
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI,{
+    await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-    
-    })
+    });
     console.log("MongoDB database is connected");
   } catch (err) {
     console.error("MongoDB connection failed:", err);
-    process.exit(1); 
+    process.exit(1);
   }
 };
 
-// // Middleware
+// Middleware
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors(corsOptions));
-app.use('/api/v1/auth', authRoute)  
-app.use('/api/v1/users', userRoute)  
-app.use('/api/v1/doctors', doctorRoute)
-app.use('/api/v1/reviews', reviewRoute) 
-app.use('/api/v1/bookings', bookingRoute) 
-app.use('/api/v1/chat', chatRoute) 
-app.use('/api/v1/insights', insightRoute)
-app.use('/api/v1/prescriptions', prescriptionRoute)
-app.use('/api/v1/messages', messageRoute); 
-
-
-
+app.use('/api/v1/auth', authRoute);
+app.use('/api/v1/users', userRoute);
+app.use('/api/v1/doctors', doctorRoute);
+app.use('/api/v1/reviews', reviewRoute);
+app.use('/api/v1/bookings', bookingRoute);
+app.use('/api/v1/chat', chatRoute);
+app.use('/api/v1/insights', insightRoute);
+app.use('/api/v1/prescriptions', prescriptionRoute);
+app.use('/api/v1/messages', messageRoute);
 
 app.listen(port, () => {
   connectDB();
   console.log("Server is running on port: " + port);
 });
-export default app;  
+
+export default app;
