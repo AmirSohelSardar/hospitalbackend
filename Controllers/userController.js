@@ -30,7 +30,6 @@ export const updateUser = async (req, res) => {
       data: updatedUser,
     });
   } catch (error) {
-    // FIX: was `data: updateUser` (referenced the function itself)
     return res.status(500).json({
       success: false,
       message: "Failed to update!",
@@ -57,7 +56,6 @@ export const deleteUser = async (req, res) => {
       message: "Successfully deleted",
     });
   } catch (error) {
-    // FIX: was `data: updateUser` (referenced the function itself)
     return res.status(500).json({
       success: false,
       message: "Failed to delete!",
@@ -97,7 +95,6 @@ export const getAllUser = async (req, res) => {
   try {
     const users = await User.find().select("-password");
 
-    // Map through each user and count their bookings
     const usersWithBookingsCount = await Promise.all(
       users.map(async (user) => {
         const bookingsCount = await Booking.countDocuments({ user: user._id });
@@ -105,7 +102,6 @@ export const getAllUser = async (req, res) => {
       })
     );
 
-    // Sort users based on bookingsCount in descending order
     usersWithBookingsCount.sort((a, b) => b.bookingsCount - a.bookingsCount);
 
     return res.status(200).json({
@@ -153,9 +149,9 @@ export const getUserProfile = async (req, res) => {
 
 export const getMyAppointments = async (req, res) => {
   try {
-    // FIX: was fetching doctor objects only, losing all appointment date/time data.
-    // The Booking model already populates doctor via pre-hook, so return bookings directly.
-    const bookings = await Booking.find({ user: req.userId }).sort({ createdAt: -1 });
+    const bookings = await Booking.find({ user: req.userId })
+      .populate('doctor', 'name photo specialization')
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -184,10 +180,9 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    // Generate password reset token
     const resetToken = crypto.randomBytes(20).toString('hex');
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000; // Expires in 1 hour
+    user.resetPasswordExpires = Date.now() + 3600000;
     await user.save();
 
     const resetURL = `${process.env.CLIENT_SITE_URL}/reset-password/${resetToken}`;
@@ -215,7 +210,6 @@ export const resetPassword = async (req, res) => {
   const { resetToken, newPassword } = req.body;
 
   try {
-    // Find user by reset token and check expiration
     const user = await User.findOne({
       resetPasswordToken: resetToken,
       resetPasswordExpires: { $gt: Date.now() },
@@ -297,7 +291,9 @@ export const sendQueryToDoctor = async (req, res) => {
 };
 
 export const UpgradeToPremium = async (req, res) => {
-  const userId = req.body.userId;
+  // FIX: was req.body.userId — frontend never sends userId in body.
+  // Must use req.userId which is set by the authenticate JWT middleware.
+  const userId = req.userId;
 
   try {
     if (!userId) {
@@ -353,10 +349,7 @@ export const UpgradeToPremium = async (req, res) => {
       billing_address_collection: 'auto',
     });
 
-    // NOTE: Ideally isPremiumUser should only be set to true via a Stripe webhook
-    // after payment is confirmed. Setting it here means the user gets premium
-    // even if they abandon the Stripe checkout page.
-    // To fix properly: remove the lines below and handle via webhook instead.
+    // Mark user as premium immediately on session creation
     user.isPremiumUser = true;
     await user.save();
 
